@@ -5,9 +5,22 @@ NSE Stock Screener + Portfolio Manager with Angel One Live Feed
 """
 
 import os
+import errno
+
+# Monkeypatch os.makedirs to be more resilient (fixes issues in some environments)
+_orig_makedirs = os.makedirs
+def _patched_makedirs(name, mode=0o777, exist_ok=False):
+    try:
+        _orig_makedirs(name, mode, exist_ok=True)
+    except OSError as e:
+        if e.errno != errno.EEXIST:
+            raise
+os.makedirs = _patched_makedirs
+
 import time
 import logging
 import threading
+
 
 from flask import Flask
 
