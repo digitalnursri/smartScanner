@@ -7,3 +7,4 @@ gunicorn==21.2.0
 smartapi-python
 pyotp
 websocket-client
+logzero
