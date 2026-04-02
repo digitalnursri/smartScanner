@@ -1,0 +1,12 @@
+__pycache__/
+*.pyc
+*.pyo
+__MACOSX/
+.env
+*.db
+*.sqlite3
+venv/
+.venv/
+*.egg-info/
+dist/
+build/

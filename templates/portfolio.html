@@ -1,0 +1,641 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+    <title>Portfolio Manager — NSE Screener</title>
+    <style>
+        :root{--radius:6px}
+        [data-theme="dark"]{
+            --bg-primary:#1a1a1a;--bg-secondary:#242424;--bg-tertiary:#2d2d2d;--bg-hover:#333;
+            --header-bg:#1e1e1e;--sidebar-bg:#1c1c1c;
+            --orange:#ff6c37;--orange-light:#ff8a5c;
+            --green:#4caf50;--green-bg:rgba(76,175,80,0.1);--green-border:rgba(76,175,80,0.25);
+            --red:#ef5350;--red-bg:rgba(239,83,80,0.1);--red-border:rgba(239,83,80,0.25);
+            --yellow:#ffd740;--yellow-bg:rgba(255,215,64,0.1);
+            --blue:#42a5f5;--blue-bg:rgba(66,165,245,0.1);
+            --purple:#b388ff;--purple-bg:rgba(179,136,255,0.08);
+            --text:#e0e0e0;--text-secondary:#aaa;--text-muted:#777;
+            --border:#383838;--gold:#ffd740;
+        }
+        [data-theme="light"]{
+            --bg-primary:#f5f5f5;--bg-secondary:#fff;--bg-tertiary:#eaeaea;--bg-hover:#e0e0e0;
+            --header-bg:#fff;--sidebar-bg:#f8f8f8;
+            --orange:#e8530e;--orange-light:#ff6c37;
+            --green:#1b8a3d;--green-bg:rgba(27,138,61,0.08);--green-border:rgba(27,138,61,0.2);
+            --red:#d32f2f;--red-bg:rgba(211,47,47,0.08);--red-border:rgba(211,47,47,0.2);
+            --yellow:#f57f17;--yellow-bg:rgba(245,127,23,0.08);
+            --blue:#1565c0;--blue-bg:rgba(21,101,192,0.08);
+            --purple:#7b1fa2;--purple-bg:rgba(123,31,162,0.08);
+            --text:#1a1a1a;--text-secondary:#555;--text-muted:#888;
+            --border:#d6d6d6;--gold:#e6a800;
+        }
+        *{margin:0;padding:0;box-sizing:border-box}
+        body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:var(--bg-primary);color:var(--text);min-height:100vh;font-size:13px}
+
+        .topbar{background:var(--header-bg);border-bottom:1px solid var(--border);height:48px;display:flex;align-items:center;padding:0 16px;gap:12px;position:sticky;top:0;z-index:10}
+        .topbar a{color:var(--text-secondary);text-decoration:none;font-size:12px;padding:5px 10px;border-radius:var(--radius);transition:all 0.15s}
+        .topbar a:hover{background:var(--bg-tertiary);color:var(--orange)}
+        .topbar h1{font-size:15px;font-weight:700;color:var(--orange)}
+        .topbar-spacer{flex:1}
+        .topbar-divider{width:1px;height:24px;background:var(--border)}
+
+        .container{max-width:1400px;margin:0 auto;padding:20px}
+
+        /* Summary Cards */
+        .summary{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:10px;margin-bottom:20px}
+        .card{background:var(--bg-secondary);border:1px solid var(--border);border-radius:var(--radius);padding:16px;text-align:center}
+        .card .label{font-size:9px;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.8px}
+        .card .value{font-size:22px;font-weight:700;margin-top:4px}
+        .card .sub{font-size:11px;margin-top:2px}
+
+        /* Portfolio List */
+        .portfolio-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:12px;margin-bottom:20px}
+        .pf-card{background:var(--bg-secondary);border:1px solid var(--border);border-radius:var(--radius);padding:16px;cursor:pointer;transition:all 0.15s}
+        .pf-card:hover{border-color:var(--orange);transform:translateY(-1px)}
+        .pf-card h3{font-size:15px;color:var(--orange);margin-bottom:6px}
+        .pf-card .pf-stats{display:flex;gap:16px;font-size:11px;color:var(--text-muted);margin-bottom:8px}
+        .pf-card .pf-pnl{font-size:18px;font-weight:700}
+        .pf-card .pf-actions{display:flex;gap:6px;margin-top:10px}
+
+        /* Buttons */
+        .btn{padding:6px 14px;border-radius:var(--radius);font-size:11px;font-weight:600;cursor:pointer;transition:all 0.15s;border:1px solid var(--border);background:none;color:var(--text-secondary)}
+        .btn:hover{border-color:var(--orange);color:var(--orange)}
+        .btn-primary{background:var(--orange);border-color:var(--orange);color:#fff}
+        .btn-primary:hover{background:var(--orange-light)}
+        .btn-danger{border-color:var(--red);color:var(--red)}
+        .btn-danger:hover{background:var(--red-bg)}
+        .btn-sm{padding:4px 8px;font-size:10px}
+
+        /* Table */
+        table{width:100%;border-collapse:collapse;font-size:12px;margin-top:12px}
+        thead{background:var(--bg-secondary);position:sticky;top:48px;z-index:5}
+        th{padding:8px 10px;text-align:left;font-size:10px;font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.5px;border-bottom:1px solid var(--border)}
+        td{padding:8px 10px;border-bottom:1px solid var(--border);vertical-align:middle}
+        tbody tr{transition:background 0.1s}
+        tbody tr:hover{background:var(--bg-hover)}
+        .pos-open{border-left:3px solid var(--green)}
+        .pos-closed{border-left:3px solid var(--text-muted);opacity:0.7}
+
+        /* Modal */
+        .modal-overlay{display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.6);z-index:100;align-items:center;justify-content:center}
+        .modal-overlay.active{display:flex}
+        .modal{background:var(--bg-secondary);border:1px solid var(--border);border-radius:8px;padding:24px;width:90%;max-width:500px}
+        .modal h2{font-size:16px;color:var(--orange);margin-bottom:16px}
+        .form-group{margin-bottom:12px}
+        .form-group label{display:block;font-size:10px;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:4px}
+        .form-group input,.form-group textarea{width:100%;background:var(--bg-tertiary);border:1px solid var(--border);color:var(--text);padding:8px 10px;border-radius:var(--radius);font-size:12px;outline:none}
+        .form-group input:focus,.form-group textarea:focus{border-color:var(--orange)}
+        .form-row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+        .form-actions{display:flex;gap:8px;justify-content:flex-end;margin-top:16px}
+
+        /* Symbol autocomplete */
+        .sym-suggestions{display:none;position:absolute;top:100%;left:0;right:0;background:var(--bg-secondary);border:1px solid var(--border);border-top:none;border-radius:0 0 var(--radius) var(--radius);max-height:220px;overflow-y:auto;z-index:200;box-shadow:0 6px 16px rgba(0,0,0,0.3)}
+        .sym-suggestions.open{display:block}
+        .sym-sug-item{display:flex;align-items:center;gap:8px;padding:7px 12px;cursor:pointer;font-size:12px;border-bottom:1px solid var(--border);transition:background 0.1s}
+        .sym-sug-item:last-child{border-bottom:none}
+        .sym-sug-item:hover,.sym-sug-item.active{background:var(--bg-hover)}
+        .sym-sug-item .ss-sym{font-weight:700;color:var(--orange);min-width:80px}
+        .sym-sug-item .ss-sector{color:var(--text-muted);font-size:11px}
+        .sym-sug-item .ss-price{margin-left:auto;font-weight:600;font-size:11px}
+        .sym-sug-item .ss-score{font-size:10px;padding:1px 5px;border-radius:3px;margin-left:4px}
+
+        /* Signal badges */
+        .signal-badge{display:inline-block;padding:3px 8px;border-radius:4px;font-size:10px;font-weight:700;letter-spacing:0.3px}
+        .sig-hold{background:var(--green-bg);color:var(--green);border:1px solid var(--green-border)}
+        .sig-sell{background:var(--red-bg);color:var(--red);border:1px solid var(--red-border)}
+        .sig-trail{background:var(--yellow-bg);color:var(--yellow);border:1px solid rgba(255,215,64,0.25)}
+        .sig-caution{background:var(--yellow-bg);color:var(--yellow);border:1px solid rgba(255,215,64,0.25)}
+
+        .pnl-pos{color:var(--green)}.pnl-neg{color:var(--red)}.pnl-zero{color:var(--text-muted)}
+        .status-open{color:var(--green);font-weight:600;font-size:10px}.status-closed{color:var(--text-muted);font-size:10px}
+        .live-dot{display:inline-block;width:6px;height:6px;border-radius:50%;background:var(--green);animation:pulse 2s infinite}
+        @keyframes pulse{0%,100%{opacity:1}50%{opacity:0.3}}
+
+        .empty{text-align:center;padding:40px;color:var(--text-muted)}
+        .empty h2{font-size:16px;color:var(--text-secondary);margin-bottom:6px}
+
+        .tab-bar{display:flex;gap:4px;margin-bottom:16px;border-bottom:1px solid var(--border);padding-bottom:0}
+        .tab{padding:8px 16px;font-size:12px;font-weight:600;cursor:pointer;color:var(--text-muted);border-bottom:2px solid transparent;transition:all 0.15s}
+        .tab:hover{color:var(--text)}
+        .tab.active{color:var(--orange);border-bottom-color:var(--orange)}
+    </style>
+</head>
+<body data-theme="dark">
+    <div class="topbar">
+        <a href="/">&#8592; Dashboard</a>
+        <div class="topbar-divider"></div>
+        <h1>Portfolio Manager</h1>
+        <div class="topbar-spacer"></div>
+        <span class="live-dot"></span>
+        <span style="font-size:10px;color:var(--text-muted)" id="liveStatus">Live</span>
+        <button class="btn btn-primary" onclick="showCreatePortfolio()">+ New Portfolio</button>
+    </div>
+
+    <div class="container">
+        <!-- Portfolio List View -->
+        <div id="listView">
+            <div class="portfolio-grid" id="portfolioGrid"></div>
+            <div class="empty" id="emptyState" style="display:none">
+                <h2>No Portfolios Yet</h2>
+                <p>Create your first portfolio to start tracking trades</p>
+                <button class="btn btn-primary" style="margin-top:12px" onclick="showCreatePortfolio()">+ Create Portfolio</button>
+            </div>
+        </div>
+
+        <!-- Single Portfolio Detail View -->
+        <div id="detailView" style="display:none">
+            <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px">
+                <a href="#" onclick="showList();return false" style="color:var(--text-muted);text-decoration:none;font-size:18px">&#8592;</a>
+                <h2 id="pfName" style="font-size:18px;color:var(--orange)"></h2>
+                <span id="pfDesc" style="font-size:11px;color:var(--text-muted)"></span>
+                <div style="flex:1"></div>
+                <button class="btn btn-primary" onclick="showAddPosition()">+ Add Trade</button>
+            </div>
+
+            <div class="summary" id="pfSummary"></div>
+
+            <div class="tab-bar">
+                <div class="tab active" onclick="setTab('open',this)">Open Positions</div>
+                <div class="tab" onclick="setTab('closed',this)">Closed Trades</div>
+                <div class="tab" onclick="setTab('all',this)">All</div>
+            </div>
+
+            <table id="posTable">
+                <thead>
+                    <tr>
+                        <th>Symbol</th>
+                        <th>Qty</th>
+                        <th>Buy</th>
+                        <th>Current</th>
+                        <th>P&L</th>
+                        <th>Day</th>
+                        <th>Signal</th>
+                        <th>SL (Auto)</th>
+                        <th>Target (Auto)</th>
+                        <th>RSI</th>
+                        <th>Score</th>
+                        <th>Chart</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody id="posBody"></tbody>
+            </table>
+            <div class="empty" id="posEmpty" style="display:none">
+                <p>No positions yet. Click "+ Add Trade" to add one.</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Create Portfolio Modal -->
+    <div class="modal-overlay" id="createModal">
+        <div class="modal">
+            <h2>Create Portfolio</h2>
+            <div class="form-group">
+                <label>Portfolio Name</label>
+                <input type="text" id="pfNameInput" placeholder="e.g. Swing Trading, Long Term">
+            </div>
+            <div class="form-group">
+                <label>Description (optional)</label>
+                <input type="text" id="pfDescInput" placeholder="e.g. 2-4 week swing trades">
+            </div>
+            <div class="form-actions">
+                <button class="btn" onclick="hideModal('createModal')">Cancel</button>
+                <button class="btn btn-primary" onclick="createPortfolio()">Create</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Add Position Modal -->
+    <div class="modal-overlay" id="posModal">
+        <div class="modal">
+            <h2 id="posModalTitle">Add Trade</h2>
+            <div class="form-group" style="position:relative">
+                <label>Symbol</label>
+                <input type="text" id="posSymbol" placeholder="e.g. TCS or NSE:TCS" autocomplete="off"
+                       oninput="this.value=this.value.toUpperCase();onSymbolInput(this.value)"
+                       onkeydown="onSymbolKey(event)"
+                       onfocus="onSymbolInput(this.value)"
+                       onblur="setTimeout(()=>hideSymbolSug(),200)">
+                <div class="sym-suggestions" id="symSuggestions"></div>
+            </div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Quantity</label>
+                    <input type="number" id="posQty" placeholder="10" min="1">
+                </div>
+                <div class="form-group">
+                    <label>Buy Price (₹)</label>
+                    <input type="number" id="posBuyPrice" placeholder="1500.00" step="0.01">
+                </div>
+            </div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Buy Date</label>
+                    <input type="date" id="posBuyDate">
+                </div>
+                <div class="form-group">
+                    <label>Stop Loss (₹)</label>
+                    <input type="number" id="posSL" placeholder="Optional" step="0.01">
+                </div>
+            </div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Target (₹)</label>
+                    <input type="number" id="posTarget" placeholder="Optional" step="0.01">
+                </div>
+                <div class="form-group">
+                    <label>Notes</label>
+                    <input type="text" id="posNotes" placeholder="Optional">
+                </div>
+            </div>
+            <div class="form-actions">
+                <button class="btn" onclick="hideModal('posModal')">Cancel</button>
+                <button class="btn btn-primary" id="posSubmitBtn" onclick="addPosition()">Add Trade</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Close Position Modal -->
+    <div class="modal-overlay" id="closeModal">
+        <div class="modal">
+            <h2>Close Position</h2>
+            <div class="form-group">
+                <label>Sell Price (₹)</label>
+                <input type="number" id="closeSellPrice" step="0.01">
+            </div>
+            <div class="form-group">
+                <label>Sell Date</label>
+                <input type="date" id="closeSellDate">
+            </div>
+            <div class="form-actions">
+                <button class="btn" onclick="hideModal('closeModal')">Cancel</button>
+                <button class="btn btn-primary" onclick="closePosition()">Close Trade</button>
+            </div>
+        </div>
+    </div>
+
+<script>
+const INIT_PID = {{ portfolio_id or 'null' }};
+let currentPID = null;
+let currentTab = 'open';
+let positionToClose = null;
+
+// Theme
+(function(){const t=localStorage.getItem('theme')||'dark';document.body.dataset.theme=t})();
+
+// ===== API =====
+async function api(url, method='GET', body=null){
+    const opts = {method, headers:{'Content-Type':'application/json'}};
+    if(body) opts.body = JSON.stringify(body);
+    const r = await fetch(url, opts);
+    return r.json();
+}
+
+// ===== PORTFOLIO LIST =====
+async function loadPortfolios(){
+    const d = await api('/api/portfolios');
+    const grid = document.getElementById('portfolioGrid');
+    const empty = document.getElementById('emptyState');
+
+    if(!d.portfolios.length){
+        grid.innerHTML=''; empty.style.display='block'; return;
+    }
+    empty.style.display='none';
+
+    grid.innerHTML = d.portfolios.map(p=>{
+        const s = p.summary;
+        const totalPnl = s.realized_pnl || 0;
+        const cls = totalPnl>0?'pnl-pos':totalPnl<0?'pnl-neg':'pnl-zero';
+        return `<div class="pf-card" onclick="showPortfolio(${p.id})">
+            <h3>${p.name}</h3>
+            ${p.description?`<div style="font-size:11px;color:var(--text-muted);margin-bottom:6px">${p.description}</div>`:''}
+            <div class="pf-stats">
+                <span>Open: ${s.open_count}</span>
+                <span>Invested: ₹${s.invested.toLocaleString('en-IN')}</span>
+                <span>Closed: ${s.closed_count}</span>
+            </div>
+            <div class="pf-pnl ${cls}">Realized P&L: ${totalPnl>0?'+':''}₹${totalPnl.toLocaleString('en-IN')}</div>
+            <div class="pf-actions">
+                <button class="btn btn-sm" onclick="event.stopPropagation();showPortfolio(${p.id})">Open</button>
+                <button class="btn btn-sm btn-danger" onclick="event.stopPropagation();deletePortfolio(${p.id},'${p.name}')">Delete</button>
+            </div>
+        </div>`;
+    }).join('');
+}
+
+function showList(){
+    document.getElementById('listView').style.display='block';
+    document.getElementById('detailView').style.display='none';
+    currentPID=null;
+    loadPortfolios();
+    history.replaceState(null,'','/portfolio');
+}
+
+// ===== SINGLE PORTFOLIO =====
+async function showPortfolio(pid){
+    currentPID = pid;
+    document.getElementById('listView').style.display='none';
+    document.getElementById('detailView').style.display='block';
+    history.replaceState(null,'','/portfolio/'+pid);
+
+    const pf = await api('/api/portfolios');
+    const p = pf.portfolios.find(x=>x.id===pid);
+    if(p){
+        document.getElementById('pfName').textContent=p.name;
+        document.getElementById('pfDesc').textContent=p.description||'';
+    }
+    loadPositions();
+}
+
+async function loadPositions(){
+    if(!currentPID) return;
+    const d = await api(`/api/portfolios/${currentPID}/positions`);
+    const s = d.summary;
+
+    // Summary cards
+    const upnlCls = s.unrealized_pnl>0?'pnl-pos':s.unrealized_pnl<0?'pnl-neg':'pnl-zero';
+    const rpnlCls = s.realized_pnl>0?'pnl-pos':s.realized_pnl<0?'pnl-neg':'pnl-zero';
+    const tpnlCls = s.total_pnl>0?'pnl-pos':s.total_pnl<0?'pnl-neg':'pnl-zero';
+
+    document.getElementById('pfSummary').innerHTML=`
+        <div class="card"><div class="label">Invested</div><div class="value">₹${s.invested.toLocaleString('en-IN')}</div></div>
+        <div class="card"><div class="label">Current Value</div><div class="value">₹${s.current_value.toLocaleString('en-IN')}</div></div>
+        <div class="card"><div class="label">Unrealized P&L</div><div class="value ${upnlCls}">${s.unrealized_pnl>0?'+':''}₹${s.unrealized_pnl.toLocaleString('en-IN')}</div><div class="sub ${upnlCls}">${s.unrealized_pnl_pct>0?'+':''}${s.unrealized_pnl_pct}%</div></div>
+        <div class="card"><div class="label">Realized P&L</div><div class="value ${rpnlCls}">${s.realized_pnl>0?'+':''}₹${s.realized_pnl.toLocaleString('en-IN')}</div></div>
+        <div class="card"><div class="label">Total P&L</div><div class="value ${tpnlCls}">${s.total_pnl>0?'+':''}₹${s.total_pnl.toLocaleString('en-IN')}</div></div>
+        <div class="card"><div class="label">Positions</div><div class="value">${s.open_count} <span style="font-size:11px;color:var(--text-muted)">open</span></div><div class="sub">${s.closed_count} closed</div></div>
+    `;
+
+    // Filter by tab
+    let positions = d.positions;
+    if(currentTab==='open') positions=positions.filter(p=>p.status==='OPEN');
+    else if(currentTab==='closed') positions=positions.filter(p=>p.status==='CLOSED');
+
+    const tbody = document.getElementById('posBody');
+    const empty = document.getElementById('posEmpty');
+
+    if(!positions.length){
+        tbody.innerHTML=''; empty.style.display='block'; return;
+    }
+    empty.style.display='none';
+
+    tbody.innerHTML = positions.map(p=>{
+        const isOpen = p.status==='OPEN';
+        const pnl = p.pnl||0;
+        const pnlPct = p.pnl_pct||0;
+        const pnlCls = pnl>0?'pnl-pos':pnl<0?'pnl-neg':'pnl-zero';
+        const dayChg = p.day_change_pct||0;
+        const dayChgCls = dayChg>0?'pnl-pos':dayChg<0?'pnl-neg':'pnl-zero';
+        const currentOrSell = isOpen
+            ? (p.current_price ? `₹${p.current_price.toLocaleString('en-IN')}` : '<span class="live-dot"></span>')
+            : (p.sell_price ? `₹${p.sell_price.toLocaleString('en-IN')}` : '—');
+
+        // Signal styling
+        const sig = p.signal||'';
+        const sigCls = sig==='SELL'||sig==='BOOK PROFIT'?'sig-sell':sig==='HOLD'?'sig-hold':sig==='TRAIL SL'?'sig-trail':'sig-caution';
+        const sigReasons = (p.signal_reasons||[]).join(', ');
+
+        // Auto SL/Target
+        const autoSL = p.auto_sl ? `₹${p.auto_sl.toLocaleString('en-IN')}<div style="font-size:9px;color:var(--text-muted)">${p.auto_sl_pct||''}%</div>` : '—';
+        const autoTarget = p.auto_target ? `₹${p.auto_target.toLocaleString('en-IN')}<div style="font-size:9px;color:var(--text-muted)">+${p.auto_target_pct||''}%</div>` : '—';
+
+        // RSI color
+        const rsi = p.rsi||0;
+        const rsiCls = rsi<35?'pnl-pos':rsi>70?'pnl-neg':'';
+
+        // Score
+        const score = p.score||0;
+        const scoreBg = score>=70?'background:var(--green-bg);color:var(--green)':score>=40?'background:var(--yellow-bg);color:var(--yellow)':'background:var(--bg-tertiary);color:var(--text-muted)';
+
+        return `<tr class="${isOpen?'pos-open':'pos-closed'}">
+            <td>
+                <a href="/stock/${p.symbol}" style="color:var(--orange);font-weight:600;text-decoration:none;font-size:13px">${p.symbol}</a>
+                ${p.high_conviction?'<span style="background:rgba(255,215,64,0.12);color:var(--gold);padding:1px 4px;border-radius:3px;font-size:8px;font-weight:700;margin-left:3px">HC</span>':''}
+                <div style="font-size:9px;color:var(--text-muted)">${p.sector||''} ${p.notes?'· '+p.notes:''}</div>
+                <div style="font-size:9px;color:var(--text-muted)">${p.buy_date}</div>
+            </td>
+            <td>${p.quantity}</td>
+            <td>₹${p.buy_price.toLocaleString('en-IN')}</td>
+            <td>
+                <div style="font-weight:600">${currentOrSell}</div>
+                <div class="${pnlCls}" style="font-size:10px">${pnl>0?'+':''}₹${pnl.toLocaleString('en-IN')} (${pnlPct>0?'+':''}${pnlPct}%)</div>
+            </td>
+            <td class="${pnlCls}" style="font-weight:700;font-size:14px">${pnlPct>0?'+':''}${pnlPct}%<div style="font-size:10px;font-weight:400">${pnl>0?'+':''}₹${pnl.toLocaleString('en-IN')}</div></td>
+            <td class="${dayChgCls}" style="font-size:11px">${isOpen?(dayChg>0?'+':'')+dayChg+'%':'—'}</td>
+            <td>${isOpen&&sig?`<div class="signal-badge ${sigCls}" title="${sigReasons}">${sig}</div>${sigReasons?`<div style="font-size:8px;color:var(--text-muted);max-width:100px;line-height:1.2;margin-top:2px">${sigReasons}</div>`:''}`:'—'}</td>
+            <td style="font-size:11px">${isOpen?autoSL:'—'}</td>
+            <td style="font-size:11px">${isOpen?autoTarget:'—'}</td>
+            <td class="${rsiCls}" style="font-weight:600">${isOpen&&rsi?rsi:'—'}${isOpen&&p.adx?`<div style="font-size:9px;color:var(--text-muted)">ADX:${p.adx}</div>`:''}</td>
+            <td>${isOpen&&score?`<span style="padding:2px 6px;border-radius:4px;font-size:11px;font-weight:600;${scoreBg}">${score}</span>`:''}</td>
+            <td style="white-space:nowrap">
+                <a href="/stock/${p.symbol}" class="btn btn-sm" title="Detail">📊</a>
+                <a href="https://www.tradingview.com/chart/?symbol=NSE:${p.symbol}" target="_blank" class="btn btn-sm" title="TradingView" style="font-size:10px">TV</a>
+            </td>
+            <td style="white-space:nowrap">
+                ${isOpen?`<button class="btn btn-sm" onclick="showClosePosition(${p.id},${p.current_price||0})" style="color:var(--green)">Sell</button>`:''}
+                <button class="btn btn-sm btn-danger" onclick="deletePosition(${p.id})">✕</button>
+            </td>
+        </tr>`;
+    }).join('');
+}
+
+function setTab(tab,el){
+    currentTab=tab;
+    document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+    if(el) el.classList.add('active');
+    loadPositions();
+}
+
+// ===== MODALS =====
+function showModal(id){document.getElementById(id).classList.add('active')}
+function hideModal(id){document.getElementById(id).classList.remove('active')}
+
+function showCreatePortfolio(){
+    document.getElementById('pfNameInput').value='';
+    document.getElementById('pfDescInput').value='';
+    showModal('createModal');
+    document.getElementById('pfNameInput').focus();
+}
+
+async function createPortfolio(){
+    const name=document.getElementById('pfNameInput').value.trim();
+    if(!name) return;
+    await api('/api/portfolios','POST',{name,description:document.getElementById('pfDescInput').value});
+    hideModal('createModal');
+    loadPortfolios();
+}
+
+async function deletePortfolio(pid,name){
+    if(!confirm(`Delete portfolio "${name}" and all its positions?`)) return;
+    await api(`/api/portfolios/${pid}`,'DELETE');
+    if(currentPID===pid) showList();
+    else loadPortfolios();
+}
+
+function showAddPosition(){
+    document.getElementById('posSymbol').value='';
+    document.getElementById('posQty').value='';
+    document.getElementById('posBuyPrice').value='';
+    document.getElementById('posBuyDate').value=new Date().toISOString().slice(0,10);
+    document.getElementById('posSL').value='';
+    document.getElementById('posTarget').value='';
+    document.getElementById('posNotes').value='';
+    document.getElementById('posModalTitle').textContent='Add Trade';
+    showModal('posModal');
+    document.getElementById('posSymbol').focus();
+}
+
+async function addPosition(){
+    const sym=document.getElementById('posSymbol').value.replace('NSE:','').replace('.NS','').trim();
+    const qty=document.getElementById('posQty').value;
+    const price=document.getElementById('posBuyPrice').value;
+    if(!sym||!qty||!price){alert('Symbol, Quantity, Buy Price required');return}
+
+    await api(`/api/portfolios/${currentPID}/positions`,'POST',{
+        symbol:sym,
+        quantity:parseInt(qty),
+        buy_price:parseFloat(price),
+        buy_date:document.getElementById('posBuyDate').value,
+        stop_loss:document.getElementById('posSL').value||null,
+        target:document.getElementById('posTarget').value||null,
+        notes:document.getElementById('posNotes').value,
+    });
+    hideModal('posModal');
+    loadPositions();
+}
+
+function showClosePosition(posId, currentPrice){
+    positionToClose=posId;
+    document.getElementById('closeSellPrice').value=currentPrice||'';
+    document.getElementById('closeSellDate').value=new Date().toISOString().slice(0,10);
+    showModal('closeModal');
+    document.getElementById('closeSellPrice').focus();
+}
+
+async function closePosition(){
+    if(!positionToClose) return;
+    const price=document.getElementById('closeSellPrice').value;
+    if(!price){alert('Sell price required');return}
+    await api(`/api/positions/${positionToClose}/close`,'POST',{
+        sell_price:parseFloat(price),
+        sell_date:document.getElementById('closeSellDate').value,
+    });
+    hideModal('closeModal');
+    positionToClose=null;
+    loadPositions();
+}
+
+async function deletePosition(posId){
+    if(!confirm('Delete this position?')) return;
+    await api(`/api/positions/${posId}`,'DELETE');
+    loadPositions();
+}
+
+// ===== LIVE UPDATE =====
+setInterval(()=>{if(currentPID) loadPositions()}, 10000);
+
+// ===== INIT =====
+window.addEventListener('DOMContentLoaded',()=>{
+    if(INIT_PID){
+        showPortfolio(INIT_PID);
+    }else{
+        loadPortfolios();
+    }
+});
+
+// ===== SYMBOL AUTOCOMPLETE =====
+let allStocks = [];
+let symSugIdx = -1;
+
+async function loadStockList(){
+    try{
+        const d = await api('/api/results');
+        if(d.results) allStocks = d.results;
+    }catch(e){}
+}
+loadStockList();
+
+function onSymbolInput(val){
+    const q = val.replace('NSE:','').replace('.NS','').trim();
+    symSugIdx = -1;
+    if(q.length < 1){hideSymbolSug();return}
+    buildSymbolSug(q);
+}
+
+function buildSymbolSug(q){
+    const box = document.getElementById('symSuggestions');
+    const ql = q.toLowerCase();
+
+    // Match from scan results
+    let matches = allStocks.filter(s=>
+        s.symbol.toLowerCase().startsWith(ql) ||
+        s.symbol.toLowerCase().includes(ql) ||
+        (s.sector && s.sector.toLowerCase().includes(ql))
+    ).slice(0, 8);
+
+    if(!matches.length){
+        box.innerHTML = `<div style="padding:10px;text-align:center;color:var(--text-muted);font-size:11px">No match — type full symbol to add manually</div>`;
+        box.classList.add('open');
+        return;
+    }
+
+    box.innerHTML = matches.map((s,i)=>{
+        const scBg = s.score>=70?'background:var(--green-bg);color:var(--green)':s.score>=40?'background:var(--yellow-bg);color:var(--yellow)':'background:var(--bg-tertiary);color:var(--text-muted)';
+        return `<div class="sym-sug-item" onmousedown="selectSymbol('${s.symbol}',${s.price})">
+            <span class="ss-sym">${highlightMatch(s.symbol,q)}</span>
+            <span class="ss-sector">${s.sector||''}</span>
+            ${s.high_conviction?'<span style="color:var(--gold);font-size:9px;font-weight:700">HC</span>':''}
+            <span class="ss-price">₹${s.price.toLocaleString('en-IN')}</span>
+            <span class="ss-score" style="${scBg}">${s.score}</span>
+        </div>`;
+    }).join('');
+    box.classList.add('open');
+}
+
+function highlightMatch(text, q){
+    const idx = text.toLowerCase().indexOf(q.toLowerCase());
+    if(idx===-1) return text;
+    return text.slice(0,idx)+'<strong style="color:var(--orange)">'+text.slice(idx,idx+q.length)+'</strong>'+text.slice(idx+q.length);
+}
+
+function selectSymbol(sym, price){
+    document.getElementById('posSymbol').value = sym;
+    // Auto-fill buy price with current price
+    const priceInput = document.getElementById('posBuyPrice');
+    if(priceInput && !priceInput.value) priceInput.value = price;
+    hideSymbolSug();
+    document.getElementById('posQty').focus();
+}
+
+function hideSymbolSug(){
+    document.getElementById('symSuggestions').classList.remove('open');
+    symSugIdx = -1;
+}
+
+function onSymbolKey(e){
+    const box = document.getElementById('symSuggestions');
+    const items = box.querySelectorAll('.sym-sug-item');
+    if(!items.length || !box.classList.contains('open')) return;
+
+    if(e.key==='ArrowDown'){
+        e.preventDefault();
+        symSugIdx = Math.min(symSugIdx+1, items.length-1);
+        items.forEach((el,i)=>el.classList.toggle('active',i===symSugIdx));
+        items[symSugIdx].scrollIntoView({block:'nearest'});
+    }else if(e.key==='ArrowUp'){
+        e.preventDefault();
+        symSugIdx = Math.max(symSugIdx-1, 0);
+        items.forEach((el,i)=>el.classList.toggle('active',i===symSugIdx));
+    }else if(e.key==='Enter' && symSugIdx>=0){
+        e.preventDefault();
+        items[symSugIdx].dispatchEvent(new Event('mousedown'));
+    }else if(e.key==='Escape'){
+        hideSymbolSug();
+    }
+}
+
+// Close modals on escape
+document.addEventListener('keydown',e=>{if(e.key==='Escape'){document.querySelectorAll('.modal-overlay.active').forEach(m=>m.classList.remove('active'))}});
+</script>
+</body>
+</html>

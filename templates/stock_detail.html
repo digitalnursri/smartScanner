@@ -1,0 +1,646 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ symbol }} | NSE Screener</title>
+    <style>
+        :root, [data-theme="dark"] {
+            --bg-primary:#1c1c1c;--bg-secondary:#252525;--bg-tertiary:#2d2d2d;--bg-hover:#363636;
+            --header-bg:#1a1a1a;
+            --orange:#ff6c37;--orange-light:#ff8c5a;
+            --green:#00c853;--green-bg:rgba(0,200,83,0.1);--green-border:rgba(0,200,83,0.25);
+            --red:#ff5252;--red-bg:rgba(255,82,82,0.1);--red-border:rgba(255,82,82,0.25);
+            --yellow:#ffc107;--yellow-bg:rgba(255,193,7,0.1);
+            --blue:#4fa8ff;--blue-bg:rgba(79,168,255,0.1);
+            --purple:#b388ff;--purple-bg:rgba(179,136,255,0.1);
+            --text:#e0e0e0;--text-secondary:#9e9e9e;--text-muted:#6b6b6b;
+            --border:#3a3a3a;
+            --gold:#ffd740;
+            --radius:6px;
+            --canvas-bg:#2d2d2d;
+        }
+        [data-theme="light"] {
+            --bg-primary:#f5f5f5;--bg-secondary:#ffffff;--bg-tertiary:#eaeaea;--bg-hover:#e0e0e0;
+            --header-bg:#ffffff;
+            --orange:#e8530e;--orange-light:#ff6c37;
+            --green:#1b8a3d;--green-bg:rgba(27,138,61,0.08);--green-border:rgba(27,138,61,0.2);
+            --red:#d32f2f;--red-bg:rgba(211,47,47,0.08);--red-border:rgba(211,47,47,0.2);
+            --yellow:#f57f17;--yellow-bg:rgba(245,127,23,0.08);
+            --blue:#1565c0;--blue-bg:rgba(21,101,192,0.08);
+            --purple:#7b1fa2;--purple-bg:rgba(123,31,162,0.08);
+            --text:#1a1a1a;--text-secondary:#555555;--text-muted:#888888;
+            --border:#d6d6d6;
+            --gold:#e6a800;
+            --canvas-bg:#f0f0f0;
+        }
+        *{margin:0;padding:0;box-sizing:border-box}
+        body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Helvetica Neue',sans-serif;background:var(--bg-primary);color:var(--text);min-height:100vh;font-size:13px}
+
+        /* Topbar */
+        .topbar{background:var(--header-bg);border-bottom:1px solid var(--border);height:48px;display:flex;align-items:center;padding:0 16px;gap:12px;position:sticky;top:0;z-index:10}
+        .back-link{color:var(--text-secondary);text-decoration:none;font-size:12px;display:flex;align-items:center;gap:4px;padding:5px 10px;border-radius:var(--radius);transition:all 0.15s}
+        .back-link:hover{background:var(--bg-tertiary);color:var(--orange)}
+        .topbar-divider{width:1px;height:24px;background:var(--border)}
+        .stock-info{display:flex;align-items:center;gap:10px}
+        .stock-info h1{font-size:16px;font-weight:700;color:var(--orange)}
+        .sector-tag{font-size:11px;color:var(--text-muted);background:var(--bg-tertiary);padding:2px 8px;border-radius:4px}
+        .hc-badge{background:rgba(255,215,64,0.12);color:var(--gold);padding:2px 8px;border-radius:4px;font-size:10px;font-weight:700;border:1px solid rgba(255,215,64,0.25);display:none}
+        .topbar-regime{padding:3px 10px;border-radius:4px;font-size:11px;font-weight:600;letter-spacing:0.5px}
+        .regime-bullish{background:var(--green-bg);color:var(--green);border:1px solid var(--green-border)}
+        .regime-bearish{background:var(--red-bg);color:var(--red);border:1px solid var(--red-border)}
+        .regime-sideways{background:var(--yellow-bg);color:var(--yellow);border:1px solid rgba(255,193,7,0.25)}
+        .regime-unknown{background:var(--bg-tertiary);color:var(--text-muted);border:1px solid var(--border)}
+        .topbar-spacer{flex:1}
+        .price-display{font-size:13px;color:var(--text-secondary)}
+
+        /* Main */
+        .main{max-width:1500px;margin:0 auto;padding:16px 20px}
+
+        /* Loading */
+        .loading{text-align:center;padding:60px;color:var(--text-muted)}
+        .loading .spinner{width:32px;height:32px;border:3px solid var(--border);border-top-color:var(--orange);border-radius:50%;animation:spin 0.8s linear infinite;margin:0 auto 12px}
+        @keyframes spin{to{transform:rotate(360deg)}}
+
+        /* Score Banner */
+        .score-banner{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:8px;margin-bottom:16px}
+        #livePriceCard{grid-column:span 2}
+        .score-item{background:var(--bg-secondary);border:1px solid var(--border);border-radius:var(--radius);padding:12px;text-align:center;overflow:hidden}
+        .score-item .label{font-size:9px;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.8px;white-space:nowrap}
+        .score-item .value{font-size:22px;font-weight:700;margin-top:3px;white-space:nowrap}
+        .score-item .sub{font-size:10px;color:var(--text-muted);margin-top:1px;white-space:nowrap}
+
+        /* Chart Sections */
+        .chart-section{background:var(--bg-secondary);border:1px solid var(--border);border-radius:var(--radius);padding:14px;margin-bottom:12px}
+        .chart-section h3{font-size:12px;font-weight:600;color:var(--text-secondary);margin-bottom:8px;text-transform:uppercase;letter-spacing:0.5px}
+        .chart-container canvas{width:100%;background:var(--canvas-bg);border-radius:4px}
+
+        .chart-row{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px}
+        @media(max-width:900px){.chart-row{grid-template-columns:1fr}}
+
+        /* Params */
+        .params-section{background:var(--bg-secondary);border:1px solid var(--border);border-radius:var(--radius);padding:14px;margin-bottom:12px}
+        .params-section h3{font-size:12px;font-weight:600;color:var(--orange);margin-bottom:10px;text-transform:uppercase;letter-spacing:0.5px}
+        .params-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:6px}
+        .param{background:var(--bg-tertiary);border-radius:4px;padding:8px 10px;display:flex;justify-content:space-between;align-items:center}
+        .param .p-label{font-size:11px;color:var(--text-muted)}
+        .param .p-value{font-size:13px;font-weight:600}
+
+        /* Signals */
+        .signals-section{background:var(--bg-secondary);border:1px solid var(--border);border-radius:var(--radius);padding:14px;margin-bottom:12px}
+        .signals-section h3{font-size:12px;font-weight:600;color:var(--green);margin-bottom:10px;text-transform:uppercase;letter-spacing:0.5px}
+        .signal-item{display:flex;align-items:center;gap:8px;padding:7px 10px;border-bottom:1px solid var(--border);font-size:12px}
+        .signal-item:last-child{border-bottom:none}
+        .signal-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0}
+        .signal-dot.bullish{background:var(--green)}
+        .signal-dot.bearish{background:var(--red)}
+        .signal-dot.neutral{background:var(--yellow)}
+        .signal-name{font-weight:600;min-width:150px;color:var(--text)}
+        .signal-detail{color:var(--text-muted)}
+
+        /* Targets */
+        .targets-section{background:var(--bg-secondary);border:1px solid var(--border);border-radius:var(--radius);padding:14px;margin-bottom:12px}
+        .targets-section h3{font-size:12px;font-weight:600;color:var(--orange);margin-bottom:10px;text-transform:uppercase;letter-spacing:0.5px}
+        .target-bar{position:relative;height:50px;background:var(--bg-tertiary);border-radius:4px;margin:16px 0;overflow:visible}
+        .target-marker{position:absolute;top:0;height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;font-size:10px;font-weight:600;transform:translateX(-50%)}
+        .target-line{width:2px;height:28px;border-radius:1px}
+        .target-label{margin-top:2px;white-space:nowrap}
+
+        .sr-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:6px;margin-top:10px}
+        .sr-item{text-align:center;padding:8px;background:var(--bg-tertiary);border-radius:4px}
+        .sr-item .sr-label{font-size:9px;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.5px}
+        .sr-item .sr-val{font-size:13px;font-weight:600;margin-top:2px}
+
+        .disclaimer{max-width:1500px;margin:0 auto;padding:10px 20px 20px;font-size:9px;color:var(--text-muted);border-top:1px solid var(--border)}
+
+        /* Live price */
+        .live-dot{display:inline-block;width:6px;height:6px;border-radius:50%;background:var(--green);margin-right:4px;animation:livePulse 2s infinite}
+        @keyframes livePulse{0%,100%{opacity:1}50%{opacity:0.3}}
+        .live-tag{font-size:9px;color:var(--green);font-weight:600;margin-left:6px}
+        .live-change{font-size:11px;font-weight:600;margin-left:0}
+        .live-change.up{color:var(--green)}
+        .live-change.down{color:var(--red)}
+        #livePriceCard .value{font-size:26px}
+        .price-flash{animation:priceFlash 0.6s ease}
+        @keyframes priceFlash{0%{background:rgba(255,108,55,0.25)}100%{background:transparent}}
+        .live-ohlc{display:flex;flex-wrap:wrap;gap:6px;font-size:10px;color:var(--text-muted);margin-top:4px;justify-content:center}
+        .live-ohlc span{display:flex;gap:2px;white-space:nowrap}
+        .live-ohlc .lbl{color:var(--text-muted);font-size:9px}
+        .live-ohlc .val{font-weight:600;color:var(--text);font-size:10px}
+
+        @media(max-width:768px){
+            .sr-grid{grid-template-columns:repeat(3,1fr)}
+            .score-banner{grid-template-columns:repeat(2,1fr)}
+            #livePriceCard{grid-column:span 2}
+            .price-display{display:none}
+        }
+    </style>
+</head>
+<body>
+    <!-- TOPBAR -->
+    <div class="topbar">
+        <a href="/" class="back-link">&#8592; Dashboard</a>
+        <div class="topbar-divider"></div>
+        <div class="stock-info">
+            <h1 id="stockSymbol">{{ symbol }}</h1>
+            <span class="sector-tag" id="stockSector">--</span>
+            <span class="hc-badge" id="hcBadge">HC</span>
+            <span class="topbar-regime regime-unknown" id="regimeBadge">REGIME: --</span>
+            <a href="https://www.tradingview.com/chart/?symbol=NSE:{{ symbol }}" target="_blank" rel="noopener"
+               style="margin-left:10px;padding:4px 10px;background:#2196F3;color:#fff;border-radius:4px;font-size:11px;font-weight:600;text-decoration:none;display:inline-flex;align-items:center;gap:4px">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+                TradingView
+            </a>
+        </div>
+        <div class="topbar-spacer"></div>
+        <button class="back-link" id="themeToggle" onclick="toggleTheme()" title="Toggle light/dark theme" style="border:1px solid var(--border)">
+            <span id="themeIcon">&#9788;</span>
+        </button>
+        <div class="price-display" id="priceDisplay">Loading...</div>
+    </div>
+
+    <div class="main">
+        <div class="loading" id="loadingState">
+            <div class="spinner"></div>
+            Fetching {{ symbol }} data & calculating indicators...
+        </div>
+
+        <div id="content" style="display:none">
+            <!-- Score Banner -->
+            <div class="score-banner" id="scoreBanner"></div>
+
+            <!-- Price Chart -->
+            <div class="chart-section">
+                <h3>Price Chart &mdash; Candlestick + EMA 9/21/200 + Bollinger Bands</h3>
+                <div class="chart-container"><canvas id="priceChart" height="350"></canvas></div>
+            </div>
+
+            <!-- RSI + MACD -->
+            <div class="chart-row">
+                <div class="chart-section">
+                    <h3>RSI (14)</h3>
+                    <div class="chart-container"><canvas id="rsiChart" height="180"></canvas></div>
+                </div>
+                <div class="chart-section">
+                    <h3>MACD (12, 26, 9)</h3>
+                    <div class="chart-container"><canvas id="macdChart" height="180"></canvas></div>
+                </div>
+            </div>
+
+            <!-- Stochastic + ADX -->
+            <div class="chart-row">
+                <div class="chart-section">
+                    <h3>Stochastic (K/D)</h3>
+                    <div class="chart-container"><canvas id="stochChart" height="180"></canvas></div>
+                </div>
+                <div class="chart-section">
+                    <h3>ADX (Trend Strength)</h3>
+                    <div class="chart-container"><canvas id="adxChart" height="180"></canvas></div>
+                </div>
+            </div>
+
+            <!-- Volume + OBV -->
+            <div class="chart-row">
+                <div class="chart-section">
+                    <h3>Volume + 20-Day Avg</h3>
+                    <div class="chart-container"><canvas id="volumeChart" height="180"></canvas></div>
+                </div>
+                <div class="chart-section">
+                    <h3>On-Balance Volume (OBV)</h3>
+                    <div class="chart-container"><canvas id="obvChart" height="180"></canvas></div>
+                </div>
+            </div>
+
+            <!-- Parameters -->
+            <div class="params-section">
+                <h3>All Technical Parameters</h3>
+                <div class="params-grid" id="paramsGrid"></div>
+            </div>
+
+            <!-- Signals -->
+            <div class="signals-section" id="signalsSection" style="display:none">
+                <h3>Signals from Last Scan</h3>
+                <div id="signalsList"></div>
+            </div>
+
+            <!-- Targets -->
+            <div class="targets-section" id="targetsSection" style="display:none">
+                <h3>Price Targets & Support/Resistance</h3>
+                <div id="targetBar"></div>
+                <div class="sr-grid" id="srGrid"></div>
+            </div>
+        </div>
+    </div>
+
+    <div class="disclaimer">
+        <strong>Disclaimer:</strong> Educational only. Not financial advice. DYOR. Markets carry risk. Past performance does not guarantee future results.
+    </div>
+
+<script>
+const SYMBOL = '{{ symbol }}';
+
+// ===== THEME =====
+function applyTheme(theme) {
+    document.documentElement.setAttribute('data-theme', theme);
+    localStorage.setItem('theme', theme);
+    document.getElementById('themeIcon').textContent = theme === 'light' ? '\u263D' : '\u2606';
+}
+function toggleTheme() {
+    const current = document.documentElement.getAttribute('data-theme') || 'dark';
+    applyTheme(current === 'dark' ? 'light' : 'dark');
+    // Redraw charts with new bg
+    loadStock();
+}
+applyTheme(localStorage.getItem('theme') || 'dark');
+
+// =================== CHART HELPERS ===================
+function setupCanvas(canvas, height) {
+    const dpr = window.devicePixelRatio || 1;
+    const rect = canvas.parentElement.getBoundingClientRect();
+    canvas.width = rect.width * dpr;
+    canvas.height = (height || 350) * dpr;
+    canvas.style.height = height + 'px';
+    const ctx = canvas.getContext('2d');
+    ctx.scale(dpr, dpr);
+    return { ctx, w: rect.width, h: height };
+}
+function drawLine(ctx, data, x, yScale, color, lineWidth) {
+    ctx.strokeStyle = color; ctx.lineWidth = lineWidth || 1; ctx.beginPath();
+    let started = false;
+    data.forEach((v, i) => {
+        if (v === null || v === undefined) return;
+        if (!started) { ctx.moveTo(x(i), yScale(v)); started = true; }
+        else ctx.lineTo(x(i), yScale(v));
+    });
+    ctx.stroke();
+}
+function drawHLine(ctx, y, w, color, dash) {
+    ctx.strokeStyle = color; ctx.lineWidth = 0.5; ctx.setLineDash(dash || [4, 4]);
+    ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(w, y); ctx.stroke(); ctx.setLineDash([]);
+}
+function drawLabel(ctx, text, x, y, color) {
+    ctx.font = '10px -apple-system, sans-serif'; ctx.fillStyle = color || '#6b6b6b'; ctx.fillText(text, x, y);
+}
+function makeScales(data, w, h, padding) {
+    padding = padding || { top: 10, bottom: 25, left: 5, right: 5 };
+    const filtered = data.flat().filter(v => v !== null && v !== undefined);
+    const min = Math.min(...filtered), max = Math.max(...filtered), range = max - min || 1;
+    const plotW = w - padding.left - padding.right, plotH = h - padding.top - padding.bottom;
+    return {
+        x: i => padding.left + (i / (data[0].length - 1)) * plotW,
+        y: v => padding.top + (1 - (v - min) / range) * plotH,
+        min, max, plotW, plotH, padding
+    };
+}
+
+// =================== PRICE CHART ===================
+function drawPriceChart(canvas, data) {
+    const { ctx, w, h } = setupCanvas(canvas, 350);
+    const ohlcv = data.ohlcv;
+    const pad = { top: 15, bottom: 30, left: 5, right: 5 };
+    const plotH = h - pad.top - pad.bottom;
+    const allPrices = ohlcv.flatMap(d => [d.h, d.l]).concat(data.bb_upper.filter(v=>v!==null)).concat(data.bb_lower.filter(v=>v!==null));
+    const minP = Math.min(...allPrices), maxP = Math.max(...allPrices), range = maxP - minP || 1;
+    const n = ohlcv.length, barW = Math.max(2, (w - pad.left - pad.right - 10) / n - 1.5);
+    const x = i => pad.left + 5 + i * (barW + 1.5);
+    const y = v => pad.top + (1 - (v - minP) / range) * plotH;
+    // Volume bg
+    const maxV = Math.max(...ohlcv.map(d => d.v)) || 1;
+    ctx.globalAlpha = 0.08;
+    ohlcv.forEach((d, i) => { ctx.fillStyle = d.c >= d.o ? '#00c853' : '#ff5252'; ctx.fillRect(x(i), h - pad.bottom - (d.v / maxV) * plotH * 0.2, barW, (d.v / maxV) * plotH * 0.2); });
+    ctx.globalAlpha = 1;
+    // BB fill
+    ctx.globalAlpha = 0.04; ctx.fillStyle = '#b388ff'; ctx.beginPath();
+    const si = data.bb_upper.findIndex(v => v !== null);
+    if (si >= 0) {
+        for (let i = si; i < n; i++) if (data.bb_upper[i] !== null) { i === si ? ctx.moveTo(x(i) + barW/2, y(data.bb_upper[i])) : ctx.lineTo(x(i) + barW/2, y(data.bb_upper[i])); }
+        for (let i = n - 1; i >= si; i--) if (data.bb_lower[i] !== null) ctx.lineTo(x(i) + barW/2, y(data.bb_lower[i]));
+        ctx.closePath(); ctx.fill();
+    }
+    ctx.globalAlpha = 1;
+    const lx = i => x(i) + barW / 2;
+    drawLine(ctx, data.bb_upper, lx, y, 'rgba(179,136,255,0.35)', 0.8);
+    drawLine(ctx, data.bb_lower, lx, y, 'rgba(179,136,255,0.35)', 0.8);
+    drawLine(ctx, data.bb_mid, lx, y, 'rgba(179,136,255,0.15)', 0.5);
+    drawLine(ctx, data.ema_9, lx, y, 'rgba(79,168,255,0.7)', 1);
+    drawLine(ctx, data.ema_21, lx, y, 'rgba(255,108,55,0.7)', 1);
+    drawLine(ctx, data.ema_200, lx, y, 'rgba(255,82,82,0.5)', 1);
+    drawLine(ctx, data.sma_50, lx, y, 'rgba(0,200,83,0.3)', 0.8);
+    // Candles
+    ohlcv.forEach((d, i) => {
+        const bx = x(i), mid = bx + barW / 2, g = d.c >= d.o;
+        ctx.strokeStyle = g ? '#00c853' : '#ff5252'; ctx.lineWidth = 0.7;
+        ctx.beginPath(); ctx.moveTo(mid, y(d.h)); ctx.lineTo(mid, y(d.l)); ctx.stroke();
+        ctx.fillStyle = g ? '#00c853' : '#ff5252';
+        ctx.fillRect(bx, Math.min(y(d.o), y(d.c)), barW, Math.max(1, Math.abs(y(d.o) - y(d.c))));
+    });
+    ctx.font = '9px -apple-system, sans-serif'; ctx.fillStyle = '#555';
+    const step = Math.max(1, Math.floor(n / 8));
+    for (let i = 0; i < n; i += step) ctx.fillText(ohlcv[i].date.slice(5), x(i), h - 5);
+    // Legend
+    const legend = [['EMA 9','rgba(79,168,255,0.9)'],['EMA 21','rgba(255,108,55,0.9)'],['EMA 200','rgba(255,82,82,0.7)'],['SMA 50','rgba(0,200,83,0.5)'],['BB','rgba(179,136,255,0.6)']];
+    let lxx = 8;
+    legend.forEach(([l, c]) => { ctx.fillStyle = c; ctx.fillRect(lxx, 3, 12, 3); ctx.fillStyle = '#888'; ctx.font = '9px -apple-system, sans-serif'; ctx.fillText(l, lxx + 15, 8); lxx += ctx.measureText(l).width + 25; });
+}
+
+// =================== RSI ===================
+function drawRSIChart(canvas, data) {
+    const { ctx, w, h } = setupCanvas(canvas, 180);
+    const rsi = data.rsi, s = makeScales([rsi], w, h);
+    const y = v => 10 + (1 - v / 100) * (h - 35);
+    ctx.fillStyle = 'rgba(255,82,82,0.04)'; ctx.fillRect(0, y(100), w, y(70) - y(100));
+    ctx.fillStyle = 'rgba(0,200,83,0.04)'; ctx.fillRect(0, y(30), w, y(0) - y(30));
+    drawHLine(ctx, y(70), w, 'rgba(255,82,82,0.25)'); drawHLine(ctx, y(30), w, 'rgba(0,200,83,0.25)'); drawHLine(ctx, y(50), w, 'rgba(107,107,107,0.15)');
+    drawLabel(ctx, '70', 4, y(70) - 3, '#ff5252'); drawLabel(ctx, '30', 4, y(30) + 12, '#00c853');
+    drawLine(ctx, rsi, s.x, y, '#b388ff', 1.5);
+    const curr = rsi.filter(v => v !== null).pop();
+    if (curr !== undefined) { ctx.fillStyle = curr < 30 ? '#00c853' : curr > 70 ? '#ff5252' : '#b388ff'; ctx.beginPath(); ctx.arc(s.x(rsi.length - 1), y(curr), 3, 0, Math.PI * 2); ctx.fill(); ctx.fillStyle = '#e0e0e0'; ctx.font = 'bold 11px -apple-system, sans-serif'; ctx.fillText(curr.toFixed(1), s.x(rsi.length - 1) - 30, y(curr) - 8); }
+    ctx.font = '9px -apple-system, sans-serif'; ctx.fillStyle = '#555';
+    const step = Math.max(1, Math.floor(data.dates.length / 6));
+    for (let i = 0; i < data.dates.length; i += step) ctx.fillText(data.dates[i].slice(5), s.x(i), h - 5);
+}
+
+// =================== MACD ===================
+function drawMACDChart(canvas, data) {
+    const { ctx, w, h } = setupCanvas(canvas, 180);
+    const s = makeScales([data.macd_line, data.macd_signal, data.macd_hist], w, h);
+    drawHLine(ctx, s.y(0), w, 'rgba(107,107,107,0.25)');
+    const barW = Math.max(1, s.plotW / data.macd_hist.length - 1);
+    data.macd_hist.forEach((v, i) => { if (v === null) return; ctx.fillStyle = v >= 0 ? 'rgba(0,200,83,0.35)' : 'rgba(255,82,82,0.35)'; const z = s.y(0), t = s.y(v); ctx.fillRect(s.x(i) - barW/2, Math.min(z, t), barW, Math.abs(t - z)); });
+    drawLine(ctx, data.macd_line, s.x, s.y, '#4fa8ff', 1.2);
+    drawLine(ctx, data.macd_signal, s.x, s.y, '#ff6c37', 1.2);
+    drawLabel(ctx, 'MACD', 4, 12, '#4fa8ff'); drawLabel(ctx, 'Signal', 50, 12, '#ff6c37');
+    ctx.font = '9px -apple-system, sans-serif'; ctx.fillStyle = '#555';
+    const step = Math.max(1, Math.floor(data.dates.length / 6));
+    for (let i = 0; i < data.dates.length; i += step) ctx.fillText(data.dates[i].slice(5), s.x(i), h - 5);
+}
+
+// =================== STOCHASTIC ===================
+function drawStochChart(canvas, data) {
+    const { ctx, w, h } = setupCanvas(canvas, 180);
+    const y = v => 10 + (1 - v / 100) * (h - 35), s = makeScales([data.stoch_k], w, h);
+    ctx.fillStyle = 'rgba(255,82,82,0.04)'; ctx.fillRect(0, y(100), w, y(80) - y(100));
+    ctx.fillStyle = 'rgba(0,200,83,0.04)'; ctx.fillRect(0, y(20), w, y(0) - y(20));
+    drawHLine(ctx, y(80), w, 'rgba(255,82,82,0.25)'); drawHLine(ctx, y(20), w, 'rgba(0,200,83,0.25)');
+    drawLabel(ctx, '80', 4, y(80) - 3, '#ff5252'); drawLabel(ctx, '20', 4, y(20) + 12, '#00c853');
+    drawLine(ctx, data.stoch_k, s.x, y, '#4fa8ff', 1.2); drawLine(ctx, data.stoch_d, s.x, y, '#ff6c37', 1.2);
+    drawLabel(ctx, '%K', 4, 12, '#4fa8ff'); drawLabel(ctx, '%D', 30, 12, '#ff6c37');
+    ctx.font = '9px -apple-system, sans-serif'; ctx.fillStyle = '#555';
+    const step = Math.max(1, Math.floor(data.dates.length / 6));
+    for (let i = 0; i < data.dates.length; i += step) ctx.fillText(data.dates[i].slice(5), s.x(i), h - 5);
+}
+
+// =================== ADX ===================
+function drawADXChart(canvas, data) {
+    const { ctx, w, h } = setupCanvas(canvas, 180);
+    const adx = data.adx, s = makeScales([adx], w, h);
+    const yMax = Math.max(60, s.max + 5), y = v => 10 + (1 - v / yMax) * (h - 35);
+    drawHLine(ctx, y(25), w, 'rgba(0,200,83,0.25)'); drawHLine(ctx, y(15), w, 'rgba(255,193,7,0.2)');
+    drawLabel(ctx, '25 (Trending)', 4, y(25) - 3, '#00c853'); drawLabel(ctx, '15 (Weak)', 4, y(15) - 3, '#ffc107');
+    ctx.globalAlpha = 0.08; ctx.fillStyle = '#b388ff'; ctx.beginPath(); let st = false;
+    adx.forEach((v, i) => { if (v === null) return; st ? ctx.lineTo(s.x(i), y(v)) : (ctx.moveTo(s.x(i), y(v)), st = true); });
+    ctx.lineTo(s.x(adx.length - 1), y(0)); ctx.lineTo(s.x(adx.findIndex(v => v !== null)), y(0)); ctx.closePath(); ctx.fill(); ctx.globalAlpha = 1;
+    drawLine(ctx, adx, s.x, y, '#b388ff', 1.5);
+    const curr = adx.filter(v => v !== null).pop();
+    if (curr !== undefined) { ctx.fillStyle = '#e0e0e0'; ctx.font = 'bold 11px -apple-system, sans-serif'; ctx.fillText('ADX: ' + curr.toFixed(1), w - 70, 14); }
+    ctx.font = '9px -apple-system, sans-serif'; ctx.fillStyle = '#555';
+    const step = Math.max(1, Math.floor(data.dates.length / 6));
+    for (let i = 0; i < data.dates.length; i += step) ctx.fillText(data.dates[i].slice(5), s.x(i), h - 5);
+}
+
+// =================== VOLUME ===================
+function drawVolumeChart(canvas, data) {
+    const { ctx, w, h } = setupCanvas(canvas, 180);
+    const vol = data.volume, avg = data.avg_volume, pad = { top: 10, bottom: 25 };
+    const plotH = h - pad.top - pad.bottom, maxV = Math.max(...vol) || 1, n = vol.length;
+    const barW = Math.max(1, (w - 10) / n - 1.5), xf = i => 5 + i * (barW + 1.5);
+    vol.forEach((v, i) => { const g = data.ohlcv[i] && data.ohlcv[i].c >= data.ohlcv[i].o; ctx.fillStyle = g ? 'rgba(0,200,83,0.45)' : 'rgba(255,82,82,0.45)'; const bH = (v / maxV) * plotH * 0.85; ctx.fillRect(xf(i), h - pad.bottom - bH, barW, bH); });
+    const yV = v => pad.top + (1 - v / maxV) * plotH * 0.85;
+    drawLine(ctx, avg, i => xf(i) + barW / 2, yV, '#ffc107', 1.2);
+    drawLabel(ctx, '20d Avg', 4, 12, '#ffc107');
+    ctx.font = '9px -apple-system, sans-serif'; ctx.fillStyle = '#555';
+    const step = Math.max(1, Math.floor(n / 6));
+    for (let i = 0; i < n; i += step) ctx.fillText(data.dates[i].slice(5), xf(i), h - 5);
+}
+
+// =================== OBV ===================
+function drawOBVChart(canvas, data) {
+    const { ctx, w, h } = setupCanvas(canvas, 180);
+    const obv = data.obv, s = makeScales([obv], w, h);
+    ctx.globalAlpha = 0.06; ctx.fillStyle = '#00c853'; ctx.beginPath(); let st = false;
+    obv.forEach((v, i) => { if (v === null) return; st ? ctx.lineTo(s.x(i), s.y(v)) : (ctx.moveTo(s.x(i), s.y(v)), st = true); });
+    ctx.lineTo(s.x(obv.length - 1), s.y(s.min)); ctx.lineTo(s.x(obv.findIndex(v => v !== null)), s.y(s.min)); ctx.closePath(); ctx.fill(); ctx.globalAlpha = 1;
+    drawLine(ctx, obv, s.x, s.y, '#00c853', 1.5);
+    ctx.font = '9px -apple-system, sans-serif'; ctx.fillStyle = '#555';
+    const step = Math.max(1, Math.floor(data.dates.length / 6));
+    for (let i = 0; i < data.dates.length; i += step) ctx.fillText(data.dates[i].slice(5), s.x(i), h - 5);
+}
+
+// =================== RENDER FUNCS ===================
+function renderParams(data) {
+    const scan = data.scan || {}, last = k => { const a = data[k]; return a ? a.filter(v=>v!==null).pop() : null; };
+    const rsi=last('rsi'),adx=last('adx'),sk=last('stoch_k'),sd=last('stoch_d'),atr=last('atr');
+    const atrPct=atr?((atr/data.price)*100).toFixed(2):'--';
+    const vr=data.volume.length>20?(data.volume[data.volume.length-1]/(data.avg_volume.filter(v=>v!==null).pop()||1)).toFixed(1):'--';
+    const dl=data.delivery.filter(v=>v!==null).pop();
+    const macdBull=data.macd_line.filter(v=>v!==null).pop()>data.macd_signal.filter(v=>v!==null).pop();
+    const emaBull=data.ema_9.filter(v=>v!==null).pop()>data.ema_21.filter(v=>v!==null).pop();
+
+    const params = [
+        {l:'Price',v:'₹'+data.price.toLocaleString(),c:'var(--text)'},
+        {l:'52W High',v:'₹'+data.high_52w.toLocaleString(),c:'var(--green)'},
+        {l:'52W Low',v:'₹'+data.low_52w.toLocaleString(),c:'var(--red)'},
+        {l:'RSI (14)',v:rsi?rsi.toFixed(1):'--',c:rsi<30?'var(--green)':rsi>70?'var(--red)':'var(--text)'},
+        {l:'ADX',v:adx?adx.toFixed(1):'--',c:adx>25?'var(--green)':adx<15?'var(--red)':'var(--text)'},
+        {l:'Stoch %K/%D',v:(sk?sk.toFixed(0):'--')+'/'+(sd?sd.toFixed(0):'--'),c:sk<20?'var(--green)':sk>80?'var(--red)':'var(--text)'},
+        {l:'ATR %',v:atrPct+'%',c:'var(--text)'},
+        {l:'BB Position',v:(scan.bb_position||'--')+'%',c:'var(--text)'},
+        {l:'Volume Ratio',v:vr+'x',c:parseFloat(vr)>1.5?'var(--green)':'var(--text)'},
+        {l:'Delivery %',v:dl?dl.toFixed(1)+'%':'--',c:dl>50?'var(--green)':'var(--text)'},
+        {l:'MACD',v:macdBull?'Bullish':'Bearish',c:macdBull?'var(--green)':'var(--red)'},
+        {l:'EMA 9/21',v:emaBull?'9>21 (Bull)':'9<21 (Bear)',c:emaBull?'var(--green)':'var(--red)'},
+        {l:'1 Week %',v:scan.pct_1w!==undefined?(scan.pct_1w>0?'+':'')+scan.pct_1w+'%':'--',c:(scan.pct_1w||0)>=0?'var(--green)':'var(--red)'},
+        {l:'2 Week %',v:scan.pct_2w!==undefined?(scan.pct_2w>0?'+':'')+scan.pct_2w+'%':'--',c:(scan.pct_2w||0)>=0?'var(--green)':'var(--red)'},
+        {l:'1 Month %',v:scan.pct_1m!==undefined?(scan.pct_1m>0?'+':'')+scan.pct_1m+'%':'--',c:(scan.pct_1m||0)>=0?'var(--green)':'var(--red)'},
+        {l:'RS vs Nifty',v:scan.rs_vs_nifty!==undefined?(scan.rs_vs_nifty>0?'+':'')+scan.rs_vs_nifty+'%':'--',c:(scan.rs_vs_nifty||0)>=0?'var(--green)':'var(--red)'},
+        {l:'Fib Level',v:scan.fib_level||'--',c:'var(--purple)'},
+        {l:'Weekly Trend',v:scan.weekly_trend?scan.weekly_trend.toUpperCase():'FLAT',c:scan.weekly_trend==='up'?'var(--green)':scan.weekly_trend==='down'?'var(--red)':'var(--yellow)'},
+        {l:'EMA 200',v:scan.below_ema200?'BELOW':'ABOVE',c:scan.below_ema200?'var(--red)':'var(--green)'},
+        {l:'Market Regime',v:(data.market_regime||'unknown').toUpperCase(),c:data.market_regime==='bullish'?'var(--green)':data.market_regime==='bearish'?'var(--red)':'var(--yellow)'},
+    ];
+    document.getElementById('paramsGrid').innerHTML = params.map(p=>`<div class="param"><span class="p-label">${p.l}</span><span class="p-value" style="color:${p.c}">${p.v}</span></div>`).join('');
+}
+
+function renderScoreBanner(data) {
+    const scan = data.scan;
+    if (!scan) { document.getElementById('scoreBanner').innerHTML = '<div class="score-item"><div class="label">Status</div><div class="value" style="color:var(--text-muted)">Not in scan</div></div>'; return; }
+    const sc=scan.score>=70?'var(--green)':scan.score>=40?'var(--yellow)':'var(--text-muted)';
+    const rc=scan.risk_score<40?'var(--green)':scan.risk_score<65?'var(--yellow)':'var(--red)';
+    const rrc=scan.risk_reward>=2.5?'var(--green)':scan.risk_reward>=1.5?'var(--yellow)':'var(--red)';
+    document.getElementById('scoreBanner').innerHTML = `
+        <div class="score-item"><div class="label">Score</div><div class="value" style="color:${sc}">${scan.score}/100</div></div>
+        <div class="score-item"><div class="label">Risk</div><div class="value" style="color:${rc}">${scan.risk_score}/100</div></div>
+        <div class="score-item"><div class="label">R:R</div><div class="value" style="color:${rrc}">${scan.risk_reward}x</div></div>
+        <div class="score-item"><div class="label">Target</div><div class="value" style="color:var(--green)">₹${scan.target_price.toLocaleString()}</div><div class="sub">+${scan.target_pct}%</div></div>
+        <div class="score-item"><div class="label">Stop Loss</div><div class="value" style="color:var(--red)">₹${scan.stop_loss.toLocaleString()}</div><div class="sub">${scan.stop_loss_pct}%</div></div>
+        <div class="score-item" id="livePriceCard"><div class="label">Price <span class="live-dot"></span><span class="live-tag" id="liveTag">LIVE</span></div><div class="value" style="color:var(--orange)" id="livePriceVal">₹${data.price.toLocaleString()}</div><div class="sub" id="liveChangeVal"></div><div class="live-ohlc" id="liveOHLC"></div></div>`;
+}
+
+function renderSignals(data) {
+    const scan = data.scan;
+    if (!scan||!scan.signals||!scan.signals.length) return;
+    document.getElementById('signalsSection').style.display = 'block';
+    document.getElementById('signalsList').innerHTML = scan.signals.map(s=>`<div class="signal-item"><span class="signal-dot ${s[2]}"></span><span class="signal-name">${s[0]}</span><span class="signal-detail">${s[1]}</span></div>`).join('');
+}
+
+function renderTargets(data) {
+    const scan = data.scan;
+    if (!scan) return;
+    document.getElementById('targetsSection').style.display = 'block';
+    const sr = scan.support_resistance || {};
+    const points = [
+        {label:'S2',val:sr.s2,color:'var(--red)'},{label:'SL',val:scan.stop_loss,color:'#ff5252'},
+        {label:'S1',val:sr.s1,color:'var(--orange)'},{label:'Price',val:data.price,color:'var(--blue)'},
+        {label:'Pivot',val:sr.pivot,color:'var(--text-muted)'},{label:'R1',val:sr.r1,color:'var(--yellow)'},
+        {label:'Target',val:scan.target_price,color:'#00c853'},{label:'R2',val:sr.r2,color:'var(--green)'},
+    ].filter(p=>p.val&&p.val>0).sort((a,b)=>a.val-b.val);
+    const minV=points[0].val*0.995,maxV=points[points.length-1].val*1.005,range=maxV-minV||1;
+    document.getElementById('targetBar').innerHTML = `<div class="target-bar">${points.map(p=>{const pct=((p.val-minV)/range*100).toFixed(1);return`<div class="target-marker" style="left:${pct}%"><div class="target-line" style="background:${p.color}"></div><div class="target-label" style="color:${p.color}">₹${Math.round(p.val)}<br>${p.label}</div></div>`;}).join('')}</div>`;
+    if (sr.s1) {
+        document.getElementById('srGrid').innerHTML = `
+            <div class="sr-item"><div class="sr-label">S2</div><div class="sr-val" style="color:var(--red)">₹${sr.s2}</div></div>
+            <div class="sr-item"><div class="sr-label">S1</div><div class="sr-val" style="color:var(--orange)">₹${sr.s1}</div></div>
+            <div class="sr-item"><div class="sr-label">Pivot</div><div class="sr-val" style="color:var(--blue)">₹${sr.pivot}</div></div>
+            <div class="sr-item"><div class="sr-label">R1</div><div class="sr-val" style="color:var(--yellow)">₹${sr.r1}</div></div>
+            <div class="sr-item"><div class="sr-label">R2</div><div class="sr-val" style="color:var(--green)">₹${sr.r2}</div></div>`;
+    }
+}
+
+// =================== MAIN ===================
+async function loadStock() {
+    try {
+        const resp = await fetch('/api/stock/' + SYMBOL);
+        if (!resp.ok) throw new Error('Failed to fetch data');
+        const data = await resp.json();
+        if (data.error) throw new Error(data.error);
+        document.getElementById('loadingState').style.display = 'none';
+        document.getElementById('content').style.display = 'block';
+        document.getElementById('stockSector').textContent = data.sector;
+        document.getElementById('priceDisplay').innerHTML = `<span id="topbarPrice">₹${data.price.toLocaleString()}</span> <span id="topbarChange"></span> | 52W: ₹${data.low_52w.toLocaleString()} — ₹${data.high_52w.toLocaleString()}`;
+        const regime = data.market_regime || 'unknown';
+        const rb = document.getElementById('regimeBadge');
+        rb.textContent = 'REGIME: ' + regime.toUpperCase();
+        rb.className = 'topbar-regime regime-' + regime;
+        if (data.scan && data.scan.high_conviction) document.getElementById('hcBadge').style.display = 'inline';
+        renderScoreBanner(data); renderParams(data); renderSignals(data); renderTargets(data);
+        drawPriceChart(document.getElementById('priceChart'), data);
+        drawRSIChart(document.getElementById('rsiChart'), data);
+        drawMACDChart(document.getElementById('macdChart'), data);
+        drawStochChart(document.getElementById('stochChart'), data);
+        drawADXChart(document.getElementById('adxChart'), data);
+        drawVolumeChart(document.getElementById('volumeChart'), data);
+        drawOBVChart(document.getElementById('obvChart'), data);
+    } catch (err) {
+        document.getElementById('loadingState').innerHTML = `<div style="color:var(--red);font-size:16px">Failed to load ${SYMBOL}</div><div style="color:var(--text-muted);margin-top:8px">${err.message}</div><a href="/" class="back-link" style="margin-top:16px;display:inline-flex">Back to Screener</a>`;
+    }
+}
+window.addEventListener('DOMContentLoaded', loadStock);
+window.addEventListener('resize', loadStock);
+
+// ===== LIVE PRICE UPDATES =====
+let liveInterval = null;
+
+function isMarketHours(){
+    const now=new Date();
+    const h=now.getHours(),m=now.getMinutes(),day=now.getDay();
+    if(day===0||day===6) return false;
+    const mins=h*60+m;
+    return mins>=555 && mins<=930;
+}
+
+async function fetchLivePrice(){
+    try{
+        const r=await fetch('/api/live-prices',{
+            method:'POST',
+            headers:{'Content-Type':'application/json'},
+            body:JSON.stringify({symbols:[SYMBOL]})
+        });
+        const d=await r.json();
+        if(d.prices && d.prices[SYMBOL]){
+            updateLivePrice(d.prices[SYMBOL], d.market_open, d.ws_connected);
+        }
+    }catch(e){}
+}
+
+function updateLivePrice(data, marketOpen, wsConnected){
+    const price = data.price;
+    const change = data.change;
+    const changePct = data.change_pct;
+    const src = wsConnected ? 'WS' : 'REST';
+
+    // Update price card
+    const priceEl = document.getElementById('livePriceVal');
+    if(priceEl){
+        const newText = '₹'+price.toLocaleString('en-IN');
+        if(priceEl.textContent !== newText){
+            priceEl.textContent = newText;
+            const card = document.getElementById('livePriceCard');
+            if(card){card.classList.remove('price-flash');void card.offsetWidth;card.classList.add('price-flash')}
+        }
+    }
+
+    // Update change
+    const chgEl = document.getElementById('liveChangeVal');
+    if(chgEl && changePct !== undefined){
+        const cls = changePct > 0 ? 'up' : changePct < 0 ? 'down' : '';
+        const arrow = changePct > 0 ? '▲' : changePct < 0 ? '▼' : '';
+        chgEl.className = 'sub live-change ' + cls;
+        chgEl.textContent = `${arrow} ${changePct > 0 ? '+' : ''}${changePct}% (${change > 0 ? '+' : ''}${change})`;
+    }
+
+    // Update OHLC
+    const ohlcEl = document.getElementById('liveOHLC');
+    if(ohlcEl && data.open){
+        ohlcEl.innerHTML = `
+            <span><span class="lbl">O:</span><span class="val">${data.open.toLocaleString('en-IN')}</span></span>
+            <span><span class="lbl">H:</span><span class="val" style="color:var(--green)">${data.high.toLocaleString('en-IN')}</span></span>
+            <span><span class="lbl">L:</span><span class="val" style="color:var(--red)">${data.low.toLocaleString('en-IN')}</span></span>
+            <span><span class="lbl">Vol:</span><span class="val">${data.volume ? (data.volume/100000).toFixed(1)+'L' : '--'}</span></span>`;
+    }
+
+    // Update live tag
+    const tagEl = document.getElementById('liveTag');
+    if(tagEl){
+        tagEl.textContent = marketOpen ? `LIVE (${src})` : 'CLOSED';
+        tagEl.style.color = marketOpen ? 'var(--green)' : 'var(--text-muted)';
+    }
+
+    // Update topbar price
+    const topPrice = document.getElementById('topbarPrice');
+    if(topPrice) topPrice.textContent = '₹'+price.toLocaleString('en-IN');
+
+    const topChg = document.getElementById('topbarChange');
+    if(topChg){
+        const cls = changePct > 0 ? 'color:var(--green)' : changePct < 0 ? 'color:var(--red)' : '';
+        topChg.style.cssText = cls;
+        topChg.textContent = `(${changePct > 0 ? '+' : ''}${changePct}%)`;
+    }
+}
+
+function startLiveUpdates(){
+    if(liveInterval) clearInterval(liveInterval);
+    fetchLivePrice();
+    if(isMarketHours()){
+        liveInterval = setInterval(fetchLivePrice, 3000); // every 3s for single stock
+    } else {
+        liveInterval = setInterval(()=>{
+            if(isMarketHours()){clearInterval(liveInterval);startLiveUpdates()}
+        }, 300000);
+    }
+}
+
+// Start live updates once DOM is ready
+window.addEventListener('DOMContentLoaded', ()=>{ setTimeout(startLiveUpdates, 2000); });
+</script>
+</body>
+</html>
