@@ -15,7 +15,19 @@ import pyotp
 from SmartApi import SmartConnect
 from SmartApi.smartWebSocketV2 import SmartWebSocketV2
 
+# Monkeypatch for signature mismatch in some SmartApi versions
+_orig_sws_on_close = SmartWebSocketV2._on_close
+def _patched_sws_on_close(self, *args, **kwargs):
+    try:
+        # Internal lib signature might be (self, code) or (self, code, reason)
+        # but websocket-client might call with (ws, code, reason)
+        return _orig_sws_on_close(self, *args[:1]) 
+    except Exception:
+        pass
+SmartWebSocketV2._on_close = _patched_sws_on_close
+
 log = logging.getLogger("live_feed")
+
 
 # ---------------------------------------------------------------------------
 # Config from .env
