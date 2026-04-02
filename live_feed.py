@@ -9,7 +9,7 @@ import time
 import logging
 import threading
 from pathlib import Path
-from datetime import datetime, date
+from datetime import datetime, date, timedelta
 
 import pyotp
 from SmartApi import SmartConnect
@@ -164,7 +164,7 @@ def get_live_price(symbol: str) -> dict | None:
 _sws = None
 
 
-def _on_data(wsapp, message):
+def _on_data(wsapp, message, *args):
     """Handle incoming tick data."""
     try:
         if not isinstance(message, dict):
@@ -201,16 +201,16 @@ def _on_data(wsapp, message):
         log.debug("Tick parse error: %s", exc)
 
 
-def _on_open(wsapp):
+def _on_open(wsapp, *args):
     log.info("WebSocket connected")
     _subscribe_current()
 
 
-def _on_error(wsapp, error):
+def _on_error(wsapp, error, *args):
     log.warning("WebSocket error: %s", error)
 
 
-def _on_close(wsapp):
+def _on_close(wsapp, *args):
     log.info("WebSocket closed")
     global _ws_running
     _ws_running = False
