@@ -283,6 +283,7 @@
         <a href="/api/export/csv" class="topbar-btn">Export CSV</a>
         <button class="topbar-btn danger" id="forceBtn" onclick="forceScan()">Force Refresh</button>
         <button class="topbar-btn primary" id="scanBtn" onclick="startScan()">Scan</button>
+        <a href="/logout" class="topbar-btn" style="margin-left:4px" title="Sign out">Logout</a>
     </div>
 
     <div class="layout">
@@ -506,13 +507,22 @@ async function forceScan(){
     document.getElementById('emptyState').style.display='none';
     await fetch('/api/force-scan',{method:'POST'}); pollStatus();
 }
+let pollCount = 0;
 async function pollStatus(){
     const d=await(await fetch('/api/status')).json();
     const pct=(d.progress/d.total*100).toFixed(0);
     document.getElementById('progressFill').style.width=pct+'%';
     updateRegimeBadge(d.market_regime);
-    if(d.scanning) setTimeout(pollStatus,2000);
-    else{
+    
+    // Partial load every 3 polls (~6 seconds) while scanning
+    if(d.scanning) {
+        pollCount++;
+        if (pollCount % 3 === 0) {
+            loadResults(true); // true means partial load, don't stop spinner
+        }
+        setTimeout(pollStatus,2000);
+    } else {
+        pollCount = 0;
         document.getElementById('progressBar').classList.remove('active');
         document.getElementById('scanBtn').disabled=false;
         document.getElementById('forceBtn').disabled=false;
@@ -521,8 +531,9 @@ async function pollStatus(){
     }
 }
 
+
 // ===== LOAD RESULTS =====
-async function loadResults(){
+async function loadResults(isPartial=false){
     const d=await(await fetch('/api/results')).json();
     allResults=d.results;
     document.getElementById('totalAnalyzed').textContent=d.total_analyzed;
@@ -553,9 +564,17 @@ async function loadResults(){
     document.getElementById('emptyState').style.display='none';
     document.getElementById('stockTable').style.display='table';
     document.getElementById('toolbar').style.display='flex';
+    
+    // During partial load, we update the table but keep the "Scanning..." state visible
+    if (isPartial) {
+        const scanBtn = document.getElementById('scanBtn');
+        if (scanBtn) scanBtn.textContent = 'Scanning... (' + allResults.length + ')';
+    }
+
     renderTable(allResults);
     startLiveUpdates();
 }
+
 
 // ===== RENDER TABLE =====
 function renderSummaryCards(d){

@@ -44,6 +44,7 @@ log = logging.getLogger("screener")
 # Flask App
 # ---------------------------------------------------------------------------
 app = Flask(__name__)
+app.secret_key = "smartscanner-secret-key-2026"
 
 # Register blueprints
 app.register_blueprint(pages_bp)
