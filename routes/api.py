@@ -17,8 +17,11 @@ from config import TOP_N_RESULTS, DATA_LOOKBACK_DAYS, CACHE_FILE
 from stocks import STOCK_UNIVERSE, SECTORS
 from scanner import scan_cache, run_full_scan
 from analyzer import fetch_and_analyze
+import logging
 import live_feed
 import db
+
+log = logging.getLogger("screener")
 
 api_bp = Blueprint("api", __name__)
 
@@ -124,12 +127,25 @@ def stock_data(symbol):
     clean = symbol.upper().replace(".NS", "")
     cached = next((r for r in scan_cache["results"] if r["symbol"] == clean), None)
 
+
     try:
         end_date = date.today()
         start_date = end_date - timedelta(days=DATA_LOOKBACK_DAYS)
-        df = stock_df(symbol=clean, from_date=start_date, to_date=end_date)
+        
+        # Phase 1: jugaad_data fetch
+        df = pd.DataFrame()
+        try:
+            df = stock_df(symbol=clean, from_date=start_date, to_date=end_date)
+        except Exception as exc:
+            log.debug("jugaad_data fetch failed for %s: %s", clean, exc)
+            
+        # Phase 2: Angel One Fallback
         if df.empty or len(df) < 50:
-            return jsonify({"error": "Insufficient data"}), 404
+            log.info("API Fallback: Fetching %s historical from Angel One...", clean)
+            df = live_feed.fetch_historical(clean, days=DATA_LOOKBACK_DAYS)
+            
+        if df is None or df.empty or len(df) < 50:
+            return jsonify({"error": f"Insufficient data for {clean}"}), 404
 
         df = df.sort_values("DATE").reset_index(drop=True)
         close = df["CLOSE"].astype(float)
@@ -232,8 +248,7 @@ def stock_data(symbol):
 
         return jsonify(result)
     except Exception as exc:
-        import logging
-        logging.getLogger("screener").warning("Stock detail fetch failed for %s: %s", clean, exc)
+        log.warning("Stock detail fetch failed for %s: %s", clean, exc)
         return jsonify({"error": str(exc)}), 500
 
 
