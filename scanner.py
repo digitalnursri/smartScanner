@@ -162,6 +162,11 @@ def run_full_scan():
 
         new_scored = len(results) - scored_before
         done = scan_cache["progress"]
+        
+        # Update global cache with partial results (sorted by score)
+        sorted_partial = sorted(results, key=lambda x: x.get("score", 0), reverse=True)
+        scan_cache["results"] = sorted_partial
+        
         log.info("Phase 1 batch %d/%d — +%d, total %d scored",
                  batch_num, total_batches, new_scored, len(results))
 
