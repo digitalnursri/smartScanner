@@ -484,8 +484,11 @@ function updateFreshness(lastScan) {
     if(!lastScan||lastScan==='Never'){el.textContent='';return}
     const match=lastScan.match(/(\d{4})-(\d{2})-(\d{2}) (\d{2}):(\d{2})/);
     if(!match){el.textContent='';return}
-    const scanDate=new Date(match[1],match[2]-1,match[3],match[4],match[5]);
+    // Force IST (+05:30) for parsing
+    const isoStr=`${match[1]}-${match[2]}-${match[3]}T${match[4]}:${match[5]}:00+05:30`;
+    const scanDate=new Date(isoStr);
     const diffMin=Math.floor((new Date()-scanDate)/60000);
+    if(diffMin<0){el.textContent='Just now';el.className='ts-label fresh';return}
     if(diffMin<30){el.textContent=diffMin+'m ago';el.className='ts-label fresh'}
     else if(diffMin<180){el.textContent=diffMin+'m ago';el.className='ts-label stale'}
     else{el.textContent=Math.floor(diffMin/60)+'h ago';el.className='ts-label old'}

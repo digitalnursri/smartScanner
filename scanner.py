@@ -5,7 +5,7 @@ Batch scanner — Phase 1 (jugaad_data) + Phase 2 (Angel One fallback).
 import time
 import logging
 import threading
-from datetime import datetime
+from datetime import datetime, timezone, timedelta
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
 from stocks import STOCK_UNIVERSE
@@ -52,7 +52,9 @@ def load_disk_cache() -> bool:
         if timestamp:
             try:
                 cached_time = datetime.fromisoformat(timestamp)
-                age_hours = (datetime.now() - cached_time).total_seconds() / 3600
+                if cached_time.tzinfo is None:
+                    cached_time = cached_time.replace(tzinfo=timezone.utc)
+                age_hours = (datetime.now(timezone.utc) - cached_time).total_seconds() / 3600
                 if age_hours > CACHE_TTL_HOURS:
                     return False
             except (ValueError, TypeError):
@@ -72,7 +74,9 @@ def load_disk_cache() -> bool:
         try:
             data = json.loads(CACHE_FILE.read_text())
             cached_time = datetime.fromisoformat(data.get("timestamp", "2000-01-01"))
-            age_hours = (datetime.now() - cached_time).total_seconds() / 3600
+            if cached_time.tzinfo is None:
+                cached_time = cached_time.replace(tzinfo=timezone.utc)
+            age_hours = (datetime.now(timezone.utc) - cached_time).total_seconds() / 3600
             if age_hours > CACHE_TTL_HOURS:
                 return False
             scan_cache["results"] = data["results"]
@@ -99,7 +103,7 @@ def save_disk_cache():
             "heatmap": scan_cache["heatmap"],
             "summary": scan_cache["summary"],
             "nifty50_1m": scan_cache["nifty50_1m"],
-            "timestamp": datetime.now().isoformat(),
+            "timestamp": datetime.now(timezone.utc).isoformat(),
         })
     except Exception as exc:
         log.warning("DB save failed: %s", exc)
@@ -205,7 +209,8 @@ def run_full_scan():
     scan_cache["results"] = results
     scan_cache["heatmap"] = heatmap
     scan_cache["summary"] = summary
-    scan_cache["last_scan"] = datetime.now().strftime("%Y-%m-%d %H:%M IST")
+    ist = timezone(timedelta(hours=5, minutes=30))
+    scan_cache["last_scan"] = datetime.now(ist).strftime("%Y-%m-%d %H:%M IST")
     scan_cache["scanning"] = False
     save_disk_cache()
     log.info("Done in %.0fs! %d scored, %d high conviction, %d errors",

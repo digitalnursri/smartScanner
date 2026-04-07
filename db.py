@@ -8,7 +8,7 @@ import json
 import logging
 import threading
 from pathlib import Path
-from datetime import datetime
+from datetime import datetime, timezone, timedelta
 
 log = logging.getLogger("db")
 
@@ -108,8 +108,9 @@ def init_db():
 def save_results(results: list[dict], meta: dict = None):
     """Save scan results to DB. Updates existing, inserts new."""
     conn = _get_conn()
-    now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-    scan_date = datetime.now().strftime("%Y-%m-%d")
+    ist = timezone(timedelta(hours=5, minutes=30))
+    now = datetime.now(ist).strftime("%Y-%m-%d %H:%M:%S")
+    scan_date = datetime.now(ist).strftime("%Y-%m-%d")
 
     for r in results:
         conn.execute("""
@@ -184,7 +185,8 @@ def get_meta(key: str, default=None):
 def set_meta(key: str, value):
     """Set a metadata value."""
     conn = _get_conn()
-    now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    ist = timezone(timedelta(hours=5, minutes=30))
+    now = datetime.now(ist).strftime("%Y-%m-%d %H:%M:%S")
     v = json.dumps(value) if not isinstance(value, str) else value
     conn.execute("""
         INSERT INTO scan_meta (key, value, updated_at) VALUES (?, ?, ?)
